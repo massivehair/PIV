@@ -8,6 +8,7 @@ function [varargout] = PIV_PlotFigure(DataPath, PIVPath, varargin)
 % VidRedMeth = {'Crop', 'Binning', 'None'}
 % ColourBar = Boolean
 % CLims = [Low, High]
+% CRes = Numeric value
 % DataCLims = [Low, High]
 % FlowScale = Numeric value
 % CBarLabel = label to apply to the colour bar
@@ -24,6 +25,7 @@ addParameter(Parser,'VidRedMeth','None',...
     @(x) any(validatestring(x,{'Crop', 'Binning', 'None'})));
 addOptional(Parser,'ColourBar',false,@islogical);
 addOptional(Parser,'CLims',[],@isnumeric);
+addOptional(Parser,'CRes',1024,@isnumeric);
 addOptional(Parser,'DataCLims',[],@isnumeric);
 addOptional(Parser,'FlowScale',1,@isnumeric);
 addOptional(Parser,'CBarLabel','',@ischar);
@@ -176,7 +178,8 @@ switch Parser.Results.DataDisplay
                 else
                     CLims = [Parser.Results.CLims(1),Parser.Results.CLims(2)];
                 end
-                Hue = 4-4.*(max(min(VectMag,CLims(2)),CLims(1))-CLims(1))./(CLims(2)-CLims(1));
+                Hue = min(floor((4-4.*(max(min(VectMag,CLims(2)),CLims(1))-CLims(1))./...
+                    (CLims(2)-CLims(1)))*(Parser.Results.CRes/4)), Parser.Results.CRes-1)./((Parser.Results.CRes-1)/4);
                 RGB = squeeze(HSVtoRGB(Hue, 1 * ones(size(Hue)), 1 * ones(size(Hue))));
                 for Qndex = 1:size(x_sum,1)
                     quiver(x_sum(Qndex),y_sum(Qndex),u_sum(Qndex), v_sum(Qndex), ...
@@ -187,8 +190,8 @@ switch Parser.Results.DataDisplay
                 hold off
                 if Parser.Results.ColourBar
                     subplot('Position',[0.92,0.05,0.05,0.9])
-                    CMapSize = 1024;
-                    Hue = (4-4.*(max(min(1:CMapSize,CMapSize),2)-2)./(CMapSize-1))';
+                    CMapSize = max(Parser.Results.CRes * 32, 1024);
+                    Hue = (min(floor((4-4.*((1:CMapSize)-1)./(CMapSize-1))*(Parser.Results.CRes/4)), Parser.Results.CRes-1)./((Parser.Results.CRes-1)/4))';
                     CMap = HSVtoRGB(Hue, 1 * ones(size(Hue)), 1 * ones(size(Hue)));
                     imagesc(1,linspace(CLims(1).*Parser.Results.FlowScale,CLims(2).*Parser.Results.FlowScale, CMapSize),CMap)
                     set(gca,'YDir','normal')
@@ -219,7 +222,8 @@ switch Parser.Results.DataDisplay
                 else
                     CLims = [Parser.Results.CLims(1),Parser.Results.CLims(2)];
                 end
-                Hue = 4-4.*(max(min(AbsFlow,CLims(2)),CLims(1))-CLims(1))./(CLims(2)-CLims(1));
+                Hue = min(floor((4-4.*(max(min(AbsFlow,CLims(2)),CLims(1))-CLims(1))./...
+                    (CLims(2)-CLims(1)))*(Parser.Results.CRes/4)), Parser.Results.CRes-1)./((Parser.Results.CRes-1)/4);
                 imshow(HSVtoRGB(Hue, Saturation, Value))
         end
 end
